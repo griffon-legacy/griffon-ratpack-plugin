@@ -2,15 +2,14 @@ griffon.project.dependency.resolution = {
     inherits("global") 
     log "warn"
     repositories {
-        griffonPlugins()
         griffonHome()
-        griffonCentral()
-
         mavenCentral()
-        flatDir name: 'ratpackPluginLib', dirs: 'lib'
+        // pluginDirPath is only available when installed
+        String basePath = pluginDirPath? "${pluginDirPath}/" : ''
+        flatDir name: "ratpackLibDir", dirs: ["${basePath}lib"]
     }
     dependencies {
-        runtime 'com.bleedingwolf.ratpack:ratpack:0.1',
+        runtime 'com.bleedingwolf.ratpack:ratpack:0.2-griffon',
                 'javax.servlet:servlet-api:2.5',
                 'org.json:json:20090211'
         runtime('org.mortbay.jetty:jetty:6.1.26') { excludes 'slf4j-api', 'servlet-api' }
@@ -26,4 +25,16 @@ griffon {
     }
 }
 
-griffon.jars.destDir='target/addon'
+log4j = {
+    // Example of changing the log pattern for the default console
+    // appender:
+    appenders {
+        console name: 'stdout', layout: pattern(conversionPattern: '%d [%t] %-5p %c - %m%n')
+    }
+
+    error 'org.codehaus.griffon',
+          'org.springframework',
+          'org.apache.karaf',
+          'groovyx.net'
+    warn  'griffon'
+}

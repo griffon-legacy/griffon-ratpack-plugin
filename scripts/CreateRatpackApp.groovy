@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,9 @@
  * @author Andres Almiray
  */
 
-includeTargets << griffonScript("_GriffonInit")
 includeTargets << griffonScript("_GriffonCreateArtifacts")
 
 target('createRatpackApp': "Creates a new domain class") {
-    depends(checkVersion, parseArguments)
-
     ant.mkdir(dir:"${basedir}/griffon-app/ratpack")
 
     def type = "RatpackApp"

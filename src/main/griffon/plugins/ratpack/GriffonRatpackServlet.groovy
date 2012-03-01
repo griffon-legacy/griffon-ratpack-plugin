@@ -30,7 +30,7 @@ import com.bleedingwolf.ratpack.RatpackApp
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import griffon.util.GriffonExceptionHandler
+import static griffon.util.GriffonExceptionHandler.sanitize
 
 /**
  * @author Andres Almiray
@@ -45,14 +45,36 @@ class GriffonRatpackServlet extends HttpServlet {
 		mimetypesFileTypeMap.addMimeTypes(RatpackApp.class.getResourceAsStream('mime.types').text)
     }
     
-    void service(HttpServletRequest req, HttpServletResponse res) {   
+    void service(HttpServletRequest req, HttpServletResponse res) {  
+        List<String> output = []
+         
+        try {
+            handleRequest(req, res, output)
+        } catch(Exception e) {
+            log.error('Caught Exception ' + e, sanitize(e))
+            def renderer = new GriffonTemplateRenderer(app.config.templateRoot)
+            res.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            output << renderer.renderException(e, req)            
+        }
+        
+        def out = convertOutputToByteArray(output.join(''))
+            
+        def contentLength = out.length
+        res.setHeader('Content-Length', contentLength.toString())
+        
+        def stream = res.getOutputStream()
+        stream.write(out)
+        stream.flush()
+        stream.close()  
+    }
+    
+    private void handleRequest(HttpServletRequest req, HttpServletResponse res, List<String> output) {   
         def verb = req.method
         def path = req.pathInfo
     
         def renderer = new GriffonTemplateRenderer(app.config.templateRoot)
-        
+
         def handler = app.getHandler(verb, path)
-        def output = ''
         
         if(handler) {                
             handler.delegate.renderer = renderer
@@ -60,19 +82,19 @@ class GriffonRatpackServlet extends HttpServlet {
             handler.delegate.response = res
             
             try {
-                output = handler.call()
+                output << handler.call()
             } catch(RuntimeException ex) {
-                log.error('Caught Exception ' + ex, GriffonExceptionHandler.sanitize(ex))
+                log.error('Caught Exception ' + ex, sanitize(ex))
                 
                 res.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-                output = renderer.renderException(ex, req)
+                output << renderer.renderException(ex, req)
             }            
         } else if(app.config.public && staticFileExists(path)){        
-            output = serveStaticFile(res, path)
+            output << serveStaticFile(res, path)
         } else {
             res.status = HttpServletResponse.SC_NOT_FOUND
             
-            output = renderer.renderError(
+            output << renderer.renderError(
                 title: 'Page Not Found',   // TODO i18n
                 message: 'Page Not Found', // TODO i18n
                 metadata: [
@@ -81,16 +103,6 @@ class GriffonRatpackServlet extends HttpServlet {
                 ]
             )
         }
-        
-        output = convertOutputToByteArray(output)
-            
-        def contentLength = output.length
-        res.setHeader('Content-Length', contentLength.toString())
-        
-        def stream = res.getOutputStream()
-        stream.write(output)
-        stream.flush()
-        stream.close()
         
         log.info("[${res.status}] ${verb} ${path}")
     }

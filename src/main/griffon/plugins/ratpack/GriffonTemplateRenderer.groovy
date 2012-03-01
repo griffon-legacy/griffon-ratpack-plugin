@@ -83,13 +83,13 @@ class GriffonTemplateRenderer extends TemplateRenderer {
          renderTemplate(text, context)
      }
 
-    private String renderTemplate(String text, Map context) {
+    protected String renderTemplate(String text, Map context) {
          SimpleTemplateEngine engine = new SimpleTemplateEngine()
          def template = engine.createTemplate(text).make(context)
          return template.toString()
     }
 
-    private InputStream loadResource(String path) {
+    protected InputStream loadResource(String path) {
         Thread.currentThread().contextClassLoader.getResourceAsStream(path)
     }
  }
