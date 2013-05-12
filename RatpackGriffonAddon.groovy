@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,26 +30,26 @@ import griffon.plugins.ratpack.GriffonRatpackServlet
 class RatpackGriffonAddon {
     private static final Logger log = LoggerFactory.getLogger('griffon.addon.ratpack.RatpackGriffonAddon')
     private Server server
-    
+
     void addonPostInit(GriffonApplication app) {
         int port = app.config.ratpack?.port ?: 5000i
         server = new Server(port)
         Context context = new Context(server, '/' + Metadata.current.getApplicationName(), Context.SESSIONS)
-        
+
         app.artifactManager.ratpackClasses.each { ratpackAppClass ->
             def routes = ratpackAppClass.newInstance().routes
             RatpackApp ratpackApp = new RatpackApp()
             routes.resolveStrategy = Closure.DELEGATE_FIRST
             routes.delegate = ratpackApp
             routes()
-            
+
             ratpackApp.config.templateRoot = 'ratpack/templates'
             ratpackApp.config.public = 'ratpack/public'
             ratpackApp.config.context = '/' + ratpackAppClass.logicalPropertyName
-            
+
             GriffonRatpackServlet.configure(ratpackApp, context)
         }
-        
+
         log.info("Starting Ratpack server on port $port")
         app.artifactManager.ratpackClasses.each { ratpackAppClass ->
             log.info("Ratpack app @ http://${InetAddress.localHost.hostName}:${port}${context.contextPath}/${ratpackAppClass.logicalPropertyName}")
